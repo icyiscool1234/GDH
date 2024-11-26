@@ -19,6 +19,12 @@
 #include <Geode/Modify/CameraTriggerGameObject.hpp>
 #include <Geode/Modify/ShaderLayer.hpp>
 #include <Geode/Modify/GameToolbox.hpp>
+#include <Geode/Modify/CCMotionStreak.hpp>
+#include <Geode/Modify/HardStreak.hpp>
+#include <Geode/Modify/SongSelectNode.hpp>
+#include <Geode/Modify/MoreSearchLayer.hpp>
+#include <Geode/Modify/EditLevelLayer.hpp>
+#include <Geode/Modify/GameObject.hpp>
 #include "hacks.hpp"
 #include "config.hpp"
 
@@ -80,6 +86,19 @@ class $modify(PlayLayer) {
             PlayLayer::destroyPlayer(player, obj);
             m_isTestMode = testmode;
         }
+
+        if (config.get<bool>("respawn_time", false)) {
+            if (auto* respawnSequence = this->getActionByTag(0x10)) {
+                this->stopAction(respawnSequence);
+                auto* newSequence = cocos2d::CCSequence::create(
+                    cocos2d::CCDelayTime::create(config.get<float>("respawn_time_value", 1.f)),
+                    cocos2d::CCCallFunc::create(this, callfunc_selector(PlayLayer::delayedResetLevel)),
+                    nullptr
+                );
+                newSequence->setTag(0x10);
+                this->runAction(newSequence);
+            }
+        }
     }
 
     
@@ -120,16 +139,40 @@ class $modify(PlayLayer) {
         if (Config::get().get<bool>("no_new_best_popup", false)) return;        
         PlayLayer::showNewBest(p0, p1, p2, p3, p4, p5);
     }
+
+    void updateVisibility(float dt)  {   
+        auto& config = Config::get();
+
+        if (!config.get<bool>("pulse_size", false) && config.get<bool>("no_pulse", false))
+            m_audioEffectsLayer->m_notAudioScale = 0.5;
+
+        if (config.get<bool>("pulse_size", false)) {
+            float value = config.get<float>("pulse_size_value", 0.5f);
+            if (config.get<bool>("pulse_multiply", false))
+                m_audioEffectsLayer->m_notAudioScale *= value;
+            else
+                m_audioEffectsLayer->m_notAudioScale = value;
+        }
+
+        PlayLayer::updateVisibility(dt);
+    }
 };
 
 class $modify(GJBaseGameLayer) {
+    static void onModify(auto& self) {
+        (void) self.setHookPriority("GJBaseGameLayer::update", 0x99999);
+    }
+
     void update(float dt) {
         auto& config = Config::get();
 
-        GJBaseGameLayer::update(dt);
+        if (config.get<bool>("stop_triggers_on_death", false) && m_player1->m_isDead || m_player2->m_isDead)
+            return;
 
         if (config.get<bool>("jump_hack", false))
             m_player1->m_isOnGround = true;
+
+        GJBaseGameLayer::update(dt);
     }
 
     bool canBeActivatedByPlayer(PlayerObject *p0, EffectGameObject *p1) {
@@ -168,7 +211,7 @@ class $modify(GameStatsManager) {
 
 
 class $modify(PlayerObject) {
-    virtual void update(float dt)
+    void update(float dt)
     {
         PlayerObject::update(dt);
 
@@ -194,10 +237,14 @@ class $modify(PlayerObject) {
         PlayerObject::incrementJumps();
     }
 
-    void playSpiderDashEffect(cocos2d::CCPoint from, cocos2d::CCPoint to)
-    {
+    void playSpiderDashEffect(cocos2d::CCPoint from, cocos2d::CCPoint to) {
         if (!Config::get().get<bool>("no_spider_dash", false))
             PlayerObject::playSpiderDashEffect(from, to);
+    }
+
+    void fadeOutStreak2(float p0) {
+        if (!Config::get().get<bool>("wave_trail_on_death", false))
+            PlayerObject::fadeOutStreak2(p0);
     }
 };
 
@@ -274,7 +321,7 @@ class $modify(GJScaleControl) {
         if (m_sliderXY && m_sliderXY->m_touchLogic->m_activateThumb) {
             m_sliderXY->getThumb()->setPositionX(convertToNodeSpace(touch->getLocation()).x);
             m_sliderXY->updateBar();
-            float value = m_sliderXY->getThumb()->getValue();
+            float value = scaleFromValue(m_sliderXY->getThumb()->getValue());
             updateLabelXY(value);
             sliderChanged(m_sliderXY->getThumb());
             if (EditorUI::get()) 
@@ -513,5 +560,94 @@ class $modify(GameToolbox) {
 
         gd::string str = fmt::format("{}", value);
         return str;
+    }
+};
+
+class $modify(HardStreak) {
+    void updateStroke(float p0) {
+        auto& config = Config::get();
+
+        if (config.get<bool>("wave_trail_size", false)) 
+            m_pulseSize = config.get<float>("wave_trail_size_value", 1.f);
+
+        HardStreak::updateStroke(p0);
+    }
+};
+
+class $modify(cocos2d::CCMotionStreak) {
+    void update(float delta) {
+        auto& config = Config::get();
+        if (config.get<bool>("always_trail", false))
+            m_bStroke = true;
+
+        if (config.get<bool>("no_trail", false))
+            m_bStroke = false;
+
+        CCMotionStreak::update(delta);
+    }
+};
+
+
+class $modify(SongSelectNode) {
+    void audioNext(cocos2d::CCObject* p0) {
+        if (Config::get().get<bool>("default_song_bypass", false)) {
+            m_selectedSongID++;
+            getLevelSettings()->m_level->m_audioTrack = m_selectedSongID;
+
+            return SongSelectNode::updateAudioLabel();
+        }
+
+        SongSelectNode::audioNext(p0);
+    }
+
+    void audioPrevious(cocos2d::CCObject* p0) {
+        if (Config::get().get<bool>("default_song_bypass", false)) {
+            m_selectedSongID--;
+            getLevelSettings()->m_level->m_audioTrack = m_selectedSongID;
+            
+            return SongSelectNode::updateAudioLabel();
+        }
+
+        SongSelectNode::audioPrevious(p0);
+    }
+};
+
+class $modify(MoreSearchLayer) {
+    void audioPrevious(cocos2d::CCObject* sender) {
+        if (!Config::get().get<bool>("default_song_bypass", false))
+            return audioPrevious(sender);
+
+        int song = std::max(1, GameLevelManager::get()->getIntForKey("song_filter"));
+        MoreSearchLayer::selectSong(--song);
+    }
+
+    void audioNext(cocos2d::CCObject* sender) {
+        if (!Config::get().get<bool>("default_song_bypass", false))
+            return audioNext(sender);
+
+        int song = std::max(1, GameLevelManager::get()->getIntForKey("song_filter"));
+        MoreSearchLayer::selectSong(++song);
+    }
+
+    void selectSong(int songID) {
+        if (!Config::get().get<bool>("default_song_bypass", false))
+            return selectSong(songID);
+
+        GameLevelManager::get()->setIntForKey(songID, "song_filter");
+        updateAudioLabel();
+    }
+};
+
+class $modify(EditLevelLayer) {
+    bool init(GJGameLevel *gjgl) {
+        if (Config::get().get<bool>("verify_hack", false))
+            gjgl->m_isVerified = true;
+        return EditLevelLayer::init(gjgl);
+    }
+
+    void onShare(CCObject* sender) {
+        if (Config::get().get<bool>("no_c_mark", false)) m_level->m_originalLevel = 0;
+
+        EditLevelLayer::onShare(sender);
     }
 };

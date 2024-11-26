@@ -141,7 +141,7 @@ void Gui::Render() {
             }
         }
         else if (windowName == "Variables") {
-            ImGui::Button("ff");
+            // ImGui::Button("ff");
         }
         else {
             for (auto& hck : win.hacks) {
@@ -161,6 +161,22 @@ void Gui::Render() {
                     if (!hck.game_var.empty())
                         GameManager::get()->setGameVariable(hck.game_var.c_str(), enabled);
                     hck.handlerFunc(enabled);
+                }
+
+                if (hck.handlerCustomWindow) {
+                    ImGui::SameLine();
+                    if (ImGui::ArrowButton(fmt::format("{} Settings", hck.name).c_str(), ImGuiDir_Right)) {
+                        ImGui::OpenPopup(fmt::format("{} Settings", hck.name).c_str());
+                    }
+
+                    if (ImGui::BeginPopupModal(fmt::format("{} Settings", hck.name).c_str(), NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+                        hck.handlerCustomWindow();
+
+                        if (ImGui::Button("Close", {400 * m_scale, NULL})) {
+                            ImGui::CloseCurrentPopup();
+                        }
+                        ImGui::EndPopup();
+                    }
                 }
                 
                 ImGui::PopStyleColor();
