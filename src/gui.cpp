@@ -187,7 +187,7 @@ void Gui::Render() {
                     }
 
                     if (ImGui::BeginPopupModal(fmt::format("{} Settings", hck.name).c_str(), NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
-                        hck.handlerCustomWindow();
+                        if (hck.handlerCustomWindow) hck.handlerCustomWindow();
 
                         if (ImGui::Button("Close", {400 * m_scale, NULL})) {
                             ImGui::CloseCurrentPopup();

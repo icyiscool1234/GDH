@@ -7,7 +7,7 @@ void Hacks::Init() {
     m_windows = {
         {"Core", 10, 10, 200, 230, 
             {
-                {"Free Window Resize", "Allows free window resizing", "free_win_resize"},
+                {"Free Window Resize", "Allows free window resizing", "free_win_resize"}, // +
                 {"Noclip", "The player will be invincible to obstacles", "noclip"}, // +
                 {"Unlock Items", "The following elements will be unlocked:\n- Icons + Colors\n- Practice Music Sync\n- Music Unlocker", "unlock_items"}, // +
                 {"No Respawn Blink", "Upon respawning, the cube will not produce an unpleasant flicker", "no_respawn_blink"}, // +
@@ -103,18 +103,6 @@ void Hacks::Init() {
     };
 
     auto &config = Config::get();
-    for (auto& win : m_windows) {
-        win.orig_x = win.x;
-        win.orig_y = win.y;
-        win.orig_w = win.w;
-        win.orig_h = win.h;
-
-        for (auto& hck : win.hacks) {
-            if (!hck.game_var.empty()) {
-                config.set<bool>(hck.config, GameManager::get()->getGameVariable(hck.game_var.c_str()));
-            }
-        }
-    }
 
     #ifdef GEODE_IS_WINDOWS
     SetHandlerByConfig("free_win_resize", [this](bool enabled) {
@@ -185,4 +173,16 @@ void Hacks::Init() {
             config.set<bool>("startos_switcher::reset_camera", reset_camera);
         }
     });
+
+    for (auto& win : m_windows) {
+        win.orig_x = win.x;
+        win.orig_y = win.y;
+        win.orig_w = win.w;
+        win.orig_h = win.h;
+
+        for (auto& hck : win.hacks) {
+            if (!hck.game_var.empty()) config.set<bool>(hck.config, GameManager::get()->getGameVariable(hck.game_var.c_str()));
+            if (hck.handlerFunc) hck.handlerFunc(true);
+        }
+    }
 }

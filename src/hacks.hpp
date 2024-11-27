@@ -8,7 +8,7 @@ struct hack {
     std::string config;
     std::string game_var;
     
-    std::function<void(bool)> handlerFunc = [](bool) {};
+    std::function<void(bool)> handlerFunc = nullptr;
     void setHandler(std::function<void(bool)> func) { handlerFunc = func; }
 
     std::function<void()> handlerCustomWindow = nullptr;
