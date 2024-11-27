@@ -34,8 +34,7 @@ void Hacks::Init() {
                 {"Auto Pickup Coins", "Collects all coins in the level", "auto_pickup_coins"}, // +
                 {"Auto Practice Mode", "Auto-enables practice mode", "auto_practice_mode"}, // +
                 {"Auto Song Download", "Automatic downloading of song when you enter an online level", "auto_song_download"},  // +
-                {"Allow Low Volume", "Removes the limit on minimum volume percentage", "allow_low_volume"},  // +    
-                {"Anticheat Bypass", "Disables level kicking at level completion", "anticheat_bypass"},     
+                {"Allow Low Volume", "Removes the limit on minimum volume percentage", "allow_low_volume"},  // +
                 {"Coins In Practice", "The ability to collect coins in practice", "coins_in_practice"},
                 {"Confirm Exit", "Warning before level exit", "confim_exit", "0167"},  // +  
                 {"Fast Chest Open", "Removes the delay for opening chests", "fast_chest_open"},
@@ -50,13 +49,13 @@ void Hacks::Init() {
                 {"Jump Hack", "Removes the barrier to jump gravity", "jump_hack"},  // +
                 {"Show Percentage", "Show percentages in level progress", "show_percentage", "0040"},  // +
                 {"Smart Startpos", "Restores correct gameplay without startpos settings", "smart_startpos"},
-                {"Startpos Switcher", "The ability to switch between starting positions using the keys that you setted in keybinds", "startpos_switcher"},
-                {"Reset Camera", "When switching between starting positions, the camera may move, so this feature fixes that unpleasant switch", "reset_cameara"},
+                {"Startpos Switcher", "The ability to switch between starting positions using the keys that you setted in keybinds", "startpos_switcher"}, // +
                 {"RGB Icons", "LGBT icons, yes :3", "rgb_icons"},
                 {"Solid Wave Trail", "Disables wave blending", "solid_wave_trail"},
                 {"Show Triggers", "Displaying triggers on the PlayLayer", "show_triggers"},
                 {"Show Hitboxes", "Visualizes hitbox levels", "show_hitboxes"},
-                {"Stop triggers on death", "Stops move/rotation triggers on death so you can see what killed you", "stop_triggers_on_death"},
+                {"Show Total Attempts", "", "show_total_attempts"},   // +
+                {"Stop triggers on death", "Stops move/rotation triggers on death so you can see what killed you", "stop_triggers_on_death"},   // +
                 {"All Modes Platformer", "Removes the limit on all modes in the platformer", "all_modes_platformer"},
                 {"Force Platformer", "Enables platformer mode in all levels", "force_platformer"},
                 {"Hide Attempts", "Hides the attempt count in-game", "hide_attempts", "0135"}, // +
@@ -69,7 +68,7 @@ void Hacks::Init() {
                 {"No Shaders", "Disabling shaders in levels", "no_shaders"},  // +
                 {"No Particles", "Disables resuming the particle system", "no_particles"}, // +
                 {"No Short Numbers", "All numbers are displayed in full\n(For example, \"1.5M\" becomes \"1500000\")", "no_short_numbers"}, // +
-                {"No BG Flash", "Removes the unpleasant flicker when triggering the portal", "no_bg_flash"},
+                {"No BG Flash", "Removes the unpleasant flicker when triggering the portal", "no_bg_flash"}, // +
                 {"No Glow", "Disables glow on objects", "no_glow"}, // +
                 {"No Mirror", "Disables level mirroring", "no_mirror_portal"}, // +
                 {"No New Best Popup", "Disable the new best popup", "no_new_best_popup"}, // +
@@ -81,7 +80,7 @@ void Hacks::Init() {
                 {"No Trail", "Removes the trail located near the player", "no_trail"},  // +
                 {"Always Trail", "Displays the trail near the player at any location", "always_trail"},  // +
                 {"Wave Trail Size", "Resizes the wave trail", "wave_trail_size"},   // +
-                {"Wave Trail On Death", "", "wave_trail_on_death"}
+                {"Wave Trail On Death", "", "wave_trail_on_death"}   // +
             }
         },
         {"Creator", 450, 10, 220, 250, 
@@ -91,7 +90,7 @@ void Hacks::Init() {
                 {"Default Song Bypass", "Removes restrictions on secret official songs", "default_song_bypass"}, // +
                 // {"Scale Snap Bypass", "Removes the slider snapping when stretched from 0.97 to 1.03", "scale_snap_bypass"},
                 {"Verify Hack", "Publish a level without verification", "verify_hack"}, // +
-                {"Smooth Editor Trail", "Makes the wave smoother in the editor", "smooth_editor_trail"},
+                {"Smooth Editor Trail", "Makes the wave smoother in the editor", "smooth_editor_trail"}, // +
                 {"Level Edit", "Edit any online level", "level_edit"}, // +
                 {"No (C) Mark", "Removes copyright on copied levels", "no_c_mark"} // +
             }
@@ -117,6 +116,29 @@ void Hacks::Init() {
         }
     }
 
+    #ifdef GEODE_IS_WINDOWS
+    SetHandlerByConfig("free_win_resize", [this](bool enabled) {
+        static auto result1 = geode::Mod::get()->patch((void*)(geode::base::getCocos() + 0xd6eca), {0x90, 0x90, 0x90, 0x90, 0x90});
+        static auto patch1 = result1.isErr() ? nullptr : result1.unwrap();
+
+        static auto result2 = geode::Mod::get()->patch((void*)(geode::base::getCocos() + 0xd5089), {0x90, 0x90, 0x90, 0x90, 0x90, 0x90});
+        static auto patch2 = result1.isErr() ? nullptr : result2.unwrap();
+
+        static auto result3 = geode::Mod::get()->patch((void*)(geode::base::getCocos() + 0xd6567), {0x48, 0xe9});
+        static auto patch3 = result1.isErr() ? nullptr : result3.unwrap();
+
+        if (enabled) {
+            if (patch1) (void) patch1->enable();
+            if (patch2) (void) patch1->enable();
+            if (patch3) (void) patch1->enable();
+        } else {
+            if (patch1) (void) patch1->disable();
+            if (patch2) (void) patch1->disable();
+            if (patch3) (void) patch1->disable();
+        }        
+    });
+    #endif
+
     SetHandlerByConfig("hide_pause_menu", [this](bool enabled) {
         auto pl = PlayLayer::get();
         if (pl && pl->m_isPaused && pauseLayer != nullptr)
@@ -137,7 +159,7 @@ void Hacks::Init() {
         ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
         if (ImGui::DragFloat("##respawn_time_value", &value, 0.01f, 0.0f, FLT_MAX, "Respawn Time: %.2f")) 
             config.set("respawn_time_value", value);
-    }); //Pulse Size
+    });
 
     SetCustomWindowHandlerByConfig("pulse_size", [this, &config]() {
         auto &gui = Gui::get();
@@ -152,5 +174,15 @@ void Hacks::Init() {
         ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
         if (ImGui::DragFloat("##pulse_size_value", &value, 0.01f, 0.0f, FLT_MAX, "Pulse Size: %.2f")) 
             config.set("pulse_size_value", value);
+    });
+
+    SetCustomWindowHandlerByConfig("startpos_switcher", [this, &config]() {
+        auto &gui = Gui::get();
+
+        bool reset_camera = config.get<bool>("startos_switcher::reset_camera", true);
+
+        if (ImGuiH::Checkbox("Reset Camera", &reset_camera, gui.m_scale)) {
+            config.set<bool>("startos_switcher::reset_camera", reset_camera);
+        }
     });
 }

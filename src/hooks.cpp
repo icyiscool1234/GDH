@@ -25,13 +25,53 @@
 #include <Geode/Modify/MoreSearchLayer.hpp>
 #include <Geode/Modify/EditLevelLayer.hpp>
 #include <Geode/Modify/GameObject.hpp>
+#include <Geode/Modify/LevelEditorLayer.hpp>
 #include "hacks.hpp"
 #include "config.hpp"
+
+std::vector<StartPosObject*> startPositions;
+int selectedStartpos = -1;
+
+void switchStartPos(int incBy, bool direction = true) {
+    auto &config = Config::get();
+    auto pl = PlayLayer::get();
+
+    if (!pl || startPositions.empty()) return;
+
+    selectedStartpos += incBy;
+
+    if (selectedStartpos < -1)
+        selectedStartpos = startPositions.size() - 1;
+
+    if (selectedStartpos >= startPositions.size())
+        selectedStartpos = -1;
+
+    if (direction) {
+        StartPosObject* obj = selectedStartpos == -1 ? nullptr : startPositions[selectedStartpos];
+        
+        pl->m_currentCheckpoint = nullptr;
+        pl->setStartPosObject(obj);
+        pl->resetLevel();
+
+        if (config.get<bool>("startos_switcher::reset_camera", true))
+            pl->resetCamera();
+
+        pl->startMusic();
+
+        return;
+    }
+}
 
 class $modify(PlayLayer) {
     struct Fields {
         GameObject* anticheat_obj = nullptr;
         std::vector<GameObject*> coinsObjects;
+        cocos2d::CCMenu* startposSwitcherUI;
+        
+        ~Fields() {
+            startPositions.clear();
+            selectedStartpos = -1;
+        }
     };
 
     bool init(GJGameLevel* level, bool useReplay, bool dontCreateObjects) {
@@ -41,7 +81,55 @@ class $modify(PlayLayer) {
         if (config.get<bool>("auto_practice_mode", false))
             togglePracticeMode(true);
 
+        if (config.get<bool>("startpos_switcher", false) && !startPositions.empty()) {
+            auto win_size = cocos2d::CCDirector::sharedDirector()->getWinSize();
+
+            auto label = cocos2d::CCLabelBMFont::create(fmt::format("{}/{}", selectedStartpos+1, startPositions.size()).c_str(), "bigFont.fnt");
+            label->setScale(0.5f);
+            label->setPosition(win_size.width/2, 20.f);
+            label->setID("startposSwitcherLabels"_spr);
+
+            auto left_arrow = cocos2d::CCSprite::createWithSpriteFrameName("GJ_arrow_02_001.png");
+            left_arrow->setScale(0.5f);
+            auto left_arrowClick = geode::cocos::CCMenuItemExt::createSpriteExtra(left_arrow, [this, label](CCMenuItemSpriteExtra* sender) {
+                switchStartPos(-1);
+                label->setCString(fmt::format("{}/{}", selectedStartpos+1, startPositions.size()).c_str());
+            });
+            left_arrowClick->setPosition(win_size.width/2 - 50, cocos2d::CCDirector::sharedDirector()->getScreenBottom() + left_arrowClick->getScaledContentHeight());
+            left_arrowClick->setOpacity(100);
+            left_arrowClick->setID("startposSwitcherLeftArrowClick"_spr);
+
+            auto right_arrow = cocos2d::CCSprite::createWithSpriteFrameName("GJ_arrow_02_001.png");  
+            right_arrow->setScale(0.5f);
+            right_arrow->setFlipX(true);
+            auto right_arrowClick = geode::cocos::CCMenuItemExt::createSpriteExtra(right_arrow, [this, label](CCMenuItemSpriteExtra* sender) {
+                switchStartPos(1);
+                label->setCString(fmt::format("{}/{}", selectedStartpos+1, startPositions.size()).c_str());
+            });       
+            right_arrowClick->setPosition(win_size.width/2 + 50, cocos2d::CCDirector::sharedDirector()->getScreenBottom() + right_arrowClick->getScaledContentHeight());
+            right_arrowClick->setID("startpos_switcher_rightArrowClick"_spr);
+
+            m_fields->startposSwitcherUI = cocos2d::CCMenu::create();
+            m_fields->startposSwitcherUI->setID("startposSwitcherUI"_spr);
+            m_fields->startposSwitcherUI->setPosition(0, 0);
+            m_fields->startposSwitcherUI->setZOrder(999);
+            m_fields->startposSwitcherUI->setOpacity(100);
+
+            m_fields->startposSwitcherUI->addChild(left_arrowClick);
+            m_fields->startposSwitcherUI->addChild(right_arrowClick);
+            m_fields->startposSwitcherUI->addChild(label);
+
+            m_uiLayer->addChild(m_fields->startposSwitcherUI);
+        }
+
         return true;
+    }
+
+    void togglePracticeMode(bool practiceMode) {
+        if (m_fields->startposSwitcherUI) {
+            m_fields->startposSwitcherUI->setVisible(!practiceMode);
+        }
+        PlayLayer::togglePracticeMode(practiceMode);
     }
 
     void addObject(GameObject* obj) {
@@ -65,6 +153,9 @@ class $modify(PlayLayer) {
 
         if (obj->m_objectID == 1329 || obj->m_objectID == 142) {
             m_fields->coinsObjects.push_back(obj);
+        }
+        else if (obj->m_objectID == 31) {
+            startPositions.push_back(static_cast<StartPosObject *>(obj));
         }
     }
     
@@ -107,9 +198,11 @@ class $modify(PlayLayer) {
 
         PlayLayer::resetLevel();
 
-        if (config.get<bool>("no_do_not_flip", false) && m_attemptLabel) {
+        if (config.get<bool>("no_do_not_flip", false) && m_attemptLabel)
             m_attemptLabel->setScaleY(1);
-        }
+
+        if (config.get<bool>("show_total_attempts", false) && m_attemptLabel)
+            m_attemptLabel->setCString(fmt::format("Attempt {}", static_cast<int>(m_level->m_attempts)).c_str());
 
         if (config.get<bool>("safe_mode", false))
             m_level->m_attempts = m_level->m_attempts - 1;
@@ -120,6 +213,14 @@ class $modify(PlayLayer) {
                 destroyObject(coin);
                 pickupItem(static_cast<EffectGameObject*>(coin));
             }
+        }
+
+        if (config.get<bool>("instant_complete", false)) {
+            //bypass anticheat
+            m_timePlayed = 10.0;
+            m_bestAttemptTime = 10.0;
+
+            PlayLayer::playEndAnimationToPos({0, 0});
         }
     }
 
@@ -187,6 +288,34 @@ class $modify(GJBaseGameLayer) {
         if (config.get<bool>("no_camera_zoom", false)) return;
 
         GJBaseGameLayer::updateZoom(p0, p1, p2, p3, p4, p5);
+    }
+
+    
+    void teleportPlayer(TeleportPortalObject *p0, PlayerObject *p1) {
+        auto& config = Config::get();
+        bool hasNoEffects = p0->m_hasNoEffects;
+
+        if (config.get<bool>("no_bg_flash", false))
+            p0->m_hasNoEffects = true;
+
+        GJBaseGameLayer::teleportPlayer(p0, p1);
+        p0->m_hasNoEffects = hasNoEffects;
+    }
+
+    void lightningFlash(cocos2d::CCPoint from, cocos2d::CCPoint to, cocos2d::ccColor3B color, float lineWidth, float duration, int displacement, bool flash, float opacity) {
+        auto& config = Config::get();
+        auto gm = GameManager::get();
+
+        auto performanceMode = gm->m_performanceMode;
+
+        if (config.get<bool>("no_portal_lighting", false))
+            gm->m_performanceMode = true;
+
+        if (config.get<bool>("no_bg_flash", false))
+            flash = false;
+
+        GJBaseGameLayer::lightningFlash(from, to, color, lineWidth, duration, displacement, flash, opacity);
+        gm->m_performanceMode = performanceMode;
     }
 };
 
@@ -649,5 +778,13 @@ class $modify(EditLevelLayer) {
         if (Config::get().get<bool>("no_c_mark", false)) m_level->m_originalLevel = 0;
 
         EditLevelLayer::onShare(sender);
+    }
+};
+
+class $modify(LevelEditorLayer) {
+    void postUpdate(float dt) {
+        if (Config::get().get<bool>("smooth_editor_trail", false))
+            m_trailTimer = 0.1f;
+        LevelEditorLayer::postUpdate(dt);
     }
 };

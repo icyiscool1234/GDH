@@ -163,6 +163,10 @@ void Gui::Render() {
                     hck.handlerFunc(enabled);
                 }
 
+                if (ImGui::IsItemHovered() && !hck.desc.empty()) {
+                    ImGui::SetTooltip("%s", hck.desc.c_str());
+                }
+
                 if (hck.handlerCustomWindow) {
                     ImGui::SameLine();
                     if (ImGui::ArrowButton(fmt::format("{} Settings", hck.name).c_str(), ImGuiDir_Right)) {
@@ -180,10 +184,6 @@ void Gui::Render() {
                 }
                 
                 ImGui::PopStyleColor();
-
-                if (ImGui::IsItemHovered() && !hck.desc.empty()) {
-                    ImGui::SetTooltip("%s", hck.desc.c_str());
-                }
             }
         }
 
