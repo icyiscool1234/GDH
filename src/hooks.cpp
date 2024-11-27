@@ -1,5 +1,7 @@
 #include <Geode/modify/PlayLayer.hpp>
+#ifdef GEODE_IS_WINDOWS
 #include <Geode/Modify/GameStatsManager.hpp>
+#endif
 #include <Geode/Modify/PlayerObject.hpp>
 #include <Geode/Modify/CCTextInputNode.hpp>
 #include <Geode/Modify/LevelPage.hpp>
@@ -328,6 +330,8 @@ class $modify(CameraTriggerGameObject) {
     }
 };
 
+#ifdef GEODE_IS_WINDOWS
+
 class $modify(GameStatsManager) {
     bool isItemUnlocked(UnlockType p0, int p1) {
         if (GameStatsManager::isItemUnlocked(p0, p1))
@@ -337,6 +341,8 @@ class $modify(GameStatsManager) {
         return config.get<bool>("unlock_items", false);
     }
 };
+
+#endif
 
 
 class $modify(PlayerObject) {
