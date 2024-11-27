@@ -1,33 +1,31 @@
 #include <Geode/modify/PlayLayer.hpp>
-#ifdef GEODE_IS_WINDOWS
-#include <Geode/Modify/GameStatsManager.hpp>
-#endif
-#include <Geode/Modify/PlayerObject.hpp>
-#include <Geode/Modify/CCTextInputNode.hpp>
-#include <Geode/Modify/LevelPage.hpp>
-#include <Geode/Modify/GameManager.hpp>
-#include <Geode/Modify/SliderTouchLogic.hpp>
-#include <Geode/Modify/GJScaleControl.hpp>
-#include <Geode/Modify/LevelInfoLayer.hpp>
-#include <Geode/Modify/GJBaseGameLayer.hpp>
-#include <Geode/Modify/UILayer.hpp>
-#include <Geode/Modify/CCTransitionFade.hpp>
-#include <Geode/Modify/PauseLayer.hpp>
-#include <Geode/Modify/EditorUI.hpp>
-#include <Geode/Modify/EditorPauseLayer.hpp>
-#include <Geode/Modify/LevelTools.hpp>
-#include <Geode/Modify/CCParticleSystemQuad.hpp>
-#include <Geode/Modify/OptionsLayer.hpp>
-#include <Geode/Modify/CameraTriggerGameObject.hpp>
-#include <Geode/Modify/ShaderLayer.hpp>
-#include <Geode/Modify/GameToolbox.hpp>
-#include <Geode/Modify/CCMotionStreak.hpp>
-#include <Geode/Modify/HardStreak.hpp>
-#include <Geode/Modify/SongSelectNode.hpp>
-#include <Geode/Modify/MoreSearchLayer.hpp>
-#include <Geode/Modify/EditLevelLayer.hpp>
-#include <Geode/Modify/GameObject.hpp>
-#include <Geode/Modify/LevelEditorLayer.hpp>
+#include <Geode/modify/GameStatsManager.hpp>
+#include <Geode/modify/PlayerObject.hpp>
+#include <Geode/modify/CCTextInputNode.hpp>
+#include <Geode/modify/LevelPage.hpp>
+#include <Geode/modify/GameManager.hpp>
+#include <Geode/modify/SliderTouchLogic.hpp>
+#include <Geode/modify/GJScaleControl.hpp>
+#include <Geode/modify/LevelInfoLayer.hpp>
+#include <Geode/modify/GJBaseGameLayer.hpp>
+#include <Geode/modify/UILayer.hpp>
+#include <Geode/modify/CCTransitionFade.hpp>
+#include <Geode/modify/PauseLayer.hpp>
+#include <Geode/modify/EditorUI.hpp>
+#include <Geode/modify/EditorPauseLayer.hpp>
+#include <Geode/modify/LevelTools.hpp>
+#include <Geode/modify/CCParticleSystemQuad.hpp>
+#include <Geode/modify/OptionsLayer.hpp>
+#include <Geode/modify/CameraTriggerGameObject.hpp>
+#include <Geode/modify/ShaderLayer.hpp>
+#include <Geode/modify/GameToolbox.hpp>
+#include <Geode/modify/CCMotionStreak.hpp>
+#include <Geode/modify/HardStreak.hpp>
+#include <Geode/modify/SongSelectNode.hpp>
+#include <Geode/modify/MoreSearchLayer.hpp>
+#include <Geode/modify/EditLevelLayer.hpp>
+#include <Geode/modify/GameObject.hpp>
+#include <Geode/modify/LevelEditorLayer.hpp>
 #include "hacks.hpp"
 #include "config.hpp"
 
@@ -330,7 +328,6 @@ class $modify(CameraTriggerGameObject) {
     }
 };
 
-#ifdef GEODE_IS_WINDOWS
 
 class $modify(GameStatsManager) {
     bool isItemUnlocked(UnlockType p0, int p1) {
@@ -341,9 +338,6 @@ class $modify(GameStatsManager) {
         return config.get<bool>("unlock_items", false);
     }
 };
-
-#endif
-
 
 class $modify(PlayerObject) {
     void update(float dt)
