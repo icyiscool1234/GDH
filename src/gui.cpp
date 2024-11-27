@@ -55,6 +55,17 @@ void Gui::animateAlpha()
 
 std::vector<std::string> stretchedWindows;
 void Gui::Render() {
+    #ifdef GEODE_IS_ANDROID
+    ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 1);
+    ImGui::Begin("toggle gui");
+    if (ImGui::Button("toggle")) {
+        Toggle();
+    }
+    ImGui::End();
+    ImGui::PopStyleVar();
+    #endif
+
+
     if (isAnimating) {
         animateAlpha();
     }
