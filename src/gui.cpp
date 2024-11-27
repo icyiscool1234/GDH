@@ -121,6 +121,8 @@ void Gui::Render() {
             ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
             if (ImGui::Combo("##Menu scale", &m_index_scale, items, IM_ARRAYSIZE(items))) {
                 m_scale = float(atof(items[m_index_scale])) / 100.0f;    
+                config.set<float>("gui_scale", m_scale);
+                config.set<int>("gui_index_scale", m_index_scale);
                 m_needRescale = true;
                 ImGuiCocos::get().reload();
             }
@@ -207,6 +209,10 @@ void Gui::Init() {
     auto &config = Config::get();
 
     stretchedWindows.clear();
+
+    m_scale = config.get<float>("gui_scale", 1.f);
+    m_index_scale = config.get<int>("gui_index_scale", 7);
+
     ApplyGuiColors(config.get("gui_inverted", false));
     ApplyColor(themes[config.get<int>("gui_color_index", 0)]);
     ApplyStyle(m_scale);

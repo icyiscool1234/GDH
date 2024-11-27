@@ -87,6 +87,7 @@ class $modify(PlayLayer) {
             auto label = cocos2d::CCLabelBMFont::create(fmt::format("{}/{}", selectedStartpos+1, startPositions.size()).c_str(), "bigFont.fnt");
             label->setScale(0.5f);
             label->setPosition(win_size.width/2, 20.f);
+            label->setOpacity(100);
             label->setID("startposSwitcherLabels"_spr);
 
             auto left_arrow = cocos2d::CCSprite::createWithSpriteFrameName("GJ_arrow_02_001.png");
@@ -107,13 +108,14 @@ class $modify(PlayLayer) {
                 label->setCString(fmt::format("{}/{}", selectedStartpos+1, startPositions.size()).c_str());
             });       
             right_arrowClick->setPosition(win_size.width/2 + 50, cocos2d::CCDirector::sharedDirector()->getScreenBottom() + right_arrowClick->getScaledContentHeight());
+            right_arrowClick->setOpacity(100);
             right_arrowClick->setID("startpos_switcher_rightArrowClick"_spr);
+
 
             m_fields->startposSwitcherUI = cocos2d::CCMenu::create();
             m_fields->startposSwitcherUI->setID("startposSwitcherUI"_spr);
             m_fields->startposSwitcherUI->setPosition(0, 0);
             m_fields->startposSwitcherUI->setZOrder(999);
-            m_fields->startposSwitcherUI->setOpacity(100);
 
             m_fields->startposSwitcherUI->addChild(left_arrowClick);
             m_fields->startposSwitcherUI->addChild(right_arrowClick);
